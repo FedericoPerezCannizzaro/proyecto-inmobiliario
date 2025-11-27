@@ -1,0 +1,27 @@
+# Tu carpeta de ejemplos
+basicos/
+
+# Airflow
+logs/
+plugins/__pycache__/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Datos
+archivos/
+*.csv
+*.xlsx
+
+# Configuración
+.env
+.secrets/
+
+# IDE
+.vscode/
+.idea/
+
+# Sistema
+.DS_Store

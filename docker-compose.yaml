@@ -1,0 +1,96 @@
+version: '3.8'
+
+x-airflow-common:
+  &airflow-common
+  build: .
+  environment:
+    &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow_etl
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+  env_file:
+    -.env
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./plugins:/opt/airflow/plugins
+  user: "50000:0"
+
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow_user
+      POSTGRES_PASSWORD: airflow_pass
+      POSTGRES_DB: airflow_etl
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow_etl"]
+      interval: 10s
+      retries: 15
+      timeout: 5s
+      start_period: 30s
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: user_example@example.com
+      PGADMIN_DEFAULT_PASSWORD: pgadminpass
+    ports:
+      - "8082:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  airflow-init:
+    <<: *airflow-common
+    command: >
+      bash -c "
+        echo 'Waiting for PostgreSQL to be ready...'
+        until pg_isready -h postgres -p 5432 -U airflow -d airflow_etl; do
+          echo 'Waiting for database...'
+          sleep 5
+        done
+        echo 'Database is ready! Initializing Airflow...'
+        airflow db init
+        airflow users create --username airflow --firstname Airflow --lastname User --role Admin --email airflow@example.com --password airflow
+      "
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

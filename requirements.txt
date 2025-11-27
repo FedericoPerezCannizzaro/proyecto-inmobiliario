@@ -1,0 +1,25 @@
+# Web scraping
+requests
+beautifulsoup4
+lxml
+unidecode
+tqdm
+
+# Selenium stack
+selenium
+webdriver-manager
+selenium-stealth
+undetected-chromedriver
+
+# DB
+psycopg2-binary
+
+
+# Data Science
+pandas
+numpy
+scikit-learn
+
+# Utilidades
+regex
+
