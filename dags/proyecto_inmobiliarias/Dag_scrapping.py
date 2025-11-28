@@ -104,5 +104,4 @@ with DAG(
         #Jinja
     )
 
-#tg_scrap >> 
-tg_limpieza >> t7 >> t8
+tg_scrap >> tg_limpieza >> t7 >> t8
