@@ -4,6 +4,7 @@ beautifulsoup4
 lxml
 unidecode
 tqdm
+urllib3
 
 # Selenium stack
 selenium

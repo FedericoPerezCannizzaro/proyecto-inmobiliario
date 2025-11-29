@@ -46,6 +46,9 @@ with DAG(
     description="etapa Scrapping para inmobiliarias beltramino, polverini, torres (a futuro se buscaria agregar mas)",
     start_date=datetime(2025,11,20),
     schedule='0 0 1,15 * *',
+    max_active_tasks=1,  
+    concurrency=1,       
+    catchup=False
     ) as dag:
 
     with TaskGroup("Scrapping") as tg_scrap:
@@ -60,14 +63,18 @@ with DAG(
                                                                                             "inmob":"polverini" ,
                                                                                             "urls" : {"polverinii":"https://www.inmobiliariapolverini.com"},
                                                                                             "url_venta" : {"Polverini" :"https://www.inmobiliariapolverini.com/properties/operation/forSale"}
-                                                                                            }
+                                                                                            },
+                                                                                            retries=3,
+                                                                                            retry_delay=timedelta(minutes=1)
                             )
         
         t3 = PythonOperator(task_id = "Beltramino_Scrap", python_callable= _run_housing_ByP,op_kwargs={
                                                                                             "inmob":"beltramino",
                                                                                             "urls" : {"beltramin":"https://www.beltraminopropiedades.com.ar"},
                                                                                             "url_venta" : {"beltramino":"https://www.beltraminopropiedades.com.ar/properties/operation/forSale"}
-                                                                                                    }
+                                                                                                    },
+                                                                                                    retries=3,
+                                                                                                    retry_delay=timedelta(minutes=1)
                         )
     with TaskGroup("Limpieza") as tg_limpieza:
 
@@ -104,4 +111,4 @@ with DAG(
         #Jinja
     )
 
-tg_scrap >> tg_limpieza >> t7 >> t8
+t1 >> t2 >> t3 >> [t4, t5, t6] >> t7 >> t8
